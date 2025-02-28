@@ -4,12 +4,12 @@ from datetime import datetime, timedelta
 from collections import defaultdict
 import random
 from zoneinfo import ZoneInfo
-from flask import Flask, request  # Flask ekleniyor
+from flask import Flask, request
 
 # Telegram bot token'ı
 TELEGRAM_BOT_TOKEN = "7325325317:AAEPTiFtKJU_LnZX9CN_JKauQoQmhxkfGLI"
 bot = telebot.TeleBot(TELEGRAM_BOT_TOKEN)
-server = Flask(__name__)  # Flask uygulaması
+server = Flask(__name__)
 
 API_URL = "http://api.aladhan.com/v1/timingsByCity"
 METHOD = 13  # Diyanet İşleri Başkanlığı'nın hesaplama yöntemi
@@ -17,7 +17,7 @@ TIMEZONE = ZoneInfo("Europe/Istanbul")
 
 user_last_city = defaultdict(str)
 
-# Diğer listeler (mesajlar, dualar, hadisler vb.) aynı kalıyor, burada kısaltıyorum
+# Mesajlar, dualar, hadisler vb. listeler aynı kalıyor
 messages = ["Oruç, sabrın en güzel öğretmenidir. (Bakara, 2:183)", "..."]
 dualar = ["Allah’ım! Bizi Ramazan’ın feyzinden mahrum bırakma.", "..."]
 hadisler = ["Kim bir oruçluya iftar ettirirse, ona sevap yazılır.", "..."]
@@ -122,7 +122,6 @@ def send_all_prayer_times(message):
     bot.reply_to(message, response_message, parse_mode='HTML')
     user_last_city[user_id] = city
 
-# Diğer komutlar aynı kalıyor
 @bot.message_handler(commands=['gununmesaji'])
 def send_daily_message(message):
     msg = random.choice(messages)
@@ -163,7 +162,6 @@ def send_kissa(message):
     kissa = random.choice(kıssalar)
     bot.reply_to(message, f"📜 <b>Kıssadan Hisse</b> 📜\n────────────────\n{kissa}\n────────────────", parse_mode='HTML')
 
-# Webhook işleyicisi
 @server.route('/' + TELEGRAM_BOT_TOKEN, methods=['POST'])
 def get_message():
     json_string = request.get_data().decode('utf-8')
@@ -174,8 +172,8 @@ def get_message():
 @server.route('/')
 def webhook():
     bot.remove_webhook()
-    bot.set_webhook(url=f'https://ramazan-bot.onrender.com/{TELEGRAM_BOT_TOKEN}')
+    bot.set_webhook(url=f'https://ramazan-bot.onrender.com/{TELEGRAM_BOT_TOKEN}')  # Render URL'nizi buraya güncelleyin
     return "Webhook set!", 200
 
 if __name__ == "__main__":
-    server.run(host="0.0.0.0", port=5000)
+    server.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))  # Render PORT ortam değişkenini kullanır
