@@ -97,7 +97,7 @@ ramazan_bilgileri = [
     "Ramazan, fakirleri hatırlama ve yardım etme ayıdır."
 ]
 
-# Ramazan’a özel ayetler
+# Ramazan’a özel ayetler (birkaç ekleme yapıldı)
 ayetler = [
     "Bakara, 2:183: 'Ey iman edenler! Oruç, sizden öncekilere farz kılındığı gibi size de farz kılındı.'",
     "Bakara, 2:185: 'Ramazan ayı, insanlara yol gösterici olan Kur’an’ın indirildiği aydır.'",
@@ -108,7 +108,10 @@ ayetler = [
     "Fâtır, 35:29: 'Allah’ın kitabını okuyanlar, namazı kılanlar... Onların sevabı kat kat artar.'",
     "Kadr, 97:1: 'Biz onu (Kur’an’ı) Kadir Gecesi’nde indirdik.'",
     "Bakara, 2:187: 'Oruç gecelerinde eşlerinizle birleşmek size helal kılındı.'",
-    "Nahl, 16:97: 'Kim salih amel işlerse, ona güzel bir hayat yaşatırız.'"
+    "Nahl, 16:97: 'Kim salih amel işlerse, ona güzel bir hayat yaşatırız.'",
+    "İsrâ, 17:79: 'Gecenin bir kısmında uyanıp namaz kıl, bu sana fazladan bir ibadet olsun.'",  # Ek
+    "Şu’arâ, 26:89: 'Ancak Allah’a temiz bir kalp ile gelenler kurtuluşa erer.'",  # Ek
+    "Zümer, 39:53: 'Ey kullarım! Günah işleyerek kendinize zulmedenler, Allah’ın rahmetinden ümit kesmeyin.'"  # Ek
 ]
 
 # Ramazan’da yapılabilecek ibadetler
@@ -269,49 +272,96 @@ def send_all_prayer_times(message):
         f"🌃 Akşam   : {prayer_times['Maghrib']}\n"
         f"🌌 Yatsı   : {prayer_times['Isha']}"
     )
-
     bot.reply_to(message, response_message, parse_mode='HTML')
     user_last_city[user_id] = city
 
 @bot.message_handler(commands=['gununmesaji'])
 def send_daily_message(message):
-    msg = random.choice(messages)
-    bot.reply_to(message, f"🌙 <b>Günün Mesajı</b> 🌙\n────────────────\n{msg}\n────────────────", parse_mode='HTML')
+    try:
+        msg = random.choice(messages)
+        response_message = f"🌙 <b>Günün Mesajı</b> 🌙\n────────────────\n{msg}\n────────────────"
+        bot.reply_to(message, response_message, parse_mode='HTML')
+        logger.info(f"Günün mesajı gönderildi: {msg}")
+    except Exception as e:
+        logger.error(f"Günün mesajı gönderilemedi: {e}")
+        bot.reply_to(message, "Bir hata oluştu, lütfen tekrar deneyin.")
 
 @bot.message_handler(commands=['dua'])
 def send_dua(message):
-    dua = random.choice(dualar)
-    bot.reply_to(message, f"🤲 <b>Ramazan Duası</b> 🤲\n────────────────\n{dua}\n────────────────", parse_mode='HTML')
+    try:
+        dua = random.choice(dualar)
+        response_message = f"🤲 <b>Ramazan Duası</b> 🤲\n────────────────\n{dua}\n────────────────"
+        bot.reply_to(message, response_message, parse_mode='HTML')
+        logger.info(f"Dua gönderildi: {dua}")
+    except Exception as e:
+        logger.error(f"Dua gönderilemedi: {e}")
+        bot.reply_to(message, "Bir hata oluştu, lütfen tekrar deneyin.")
 
 @bot.message_handler(commands=['hadis'])
 def send_hadis(message):
-    hadis = random.choice(hadisler)
-    bot.reply_to(message, f"📜 <b>Ramazan Hadisi</b> 📜\n────────────────\n{hadis}\n────────────────", parse_mode='HTML')
+    try:
+        hadis = random.choice(hadisler)
+        response_message = f"📜 <b>Ramazan Hadisi</b> 📜\n────────────────\n{hadis}\n────────────────"
+        bot.reply_to(message, response_message, parse_mode='HTML')
+        logger.info(f"Hadis gönderildi: {hadis}")
+    except Exception as e:
+        logger.error(f"Hadis gönderilemedi: {e}")
+        bot.reply_to(message, "Bir hata oluştu, lütfen tekrar deneyin.")
 
 @bot.message_handler(commands=['ramazanbilgi'])
 def send_ramazan_bilgi(message):
-    bilgi = random.choice(ramazan_bilgileri)
-    bot.reply_to(message, f"ℹ️ <b>Ramazan Bilgisi</b> ℹ️\n────────────────\n{bilgi}\n────────────────", parse_mode='HTML')
+    try:
+        bilgi = random.choice(ramazan_bilgileri)
+        response_message = f"ℹ️ <b>Ramazan Bilgisi</b> ℹ️\n────────────────\n{bilgi}\n────────────────"
+        bot.reply_to(message, response_message, parse_mode='HTML')
+        logger.info(f"Ramazan bilgisi gönderildi: {bilgi}")
+    except Exception as e:
+        logger.error(f"Ramazan bilgisi gönderilemedi: {e}")
+        bot.reply_to(message, "Bir hata oluştu, lütfen tekrar deneyin.")
 
 @bot.message_handler(commands=['ayet'])
 def send_ayet(message):
-    ayet = random.choice(ayetler)
-    bot.reply_to(message, f"📖 <b>Ramazan Ayeti</b> 📖\n────────────────\n{ayet}\n────────────────", parse_mode='HTML')
+    try:
+        ayet = random.choice(ayetler)
+        response_message = f"📖 <b>Ramazan Ayeti</b> 📖\n────────────────\n{ayet}\n────────────────"
+        bot.reply_to(message, response_message, parse_mode='HTML')
+        logger.info(f"Ayet gönderildi: {ayet}")
+    except Exception as e:
+        logger.error(f"Ayet gönderilemedi: {e}")
+        bot.reply_to(message, "Bir hata oluştu, lütfen tekrar deneyin.")
 
 @bot.message_handler(commands=['ibadet'])
 def send_ibadet(message):
-    ibadet = random.choice(ibadetler)
-    bot.reply_to(message, f"🕋 <b>Ramazan İbadeti</b> 🕋\n────────────────\n{ibadet}\n────────────────", parse_mode='HTML')
+    try:
+        ibadet = random.choice(ibadetler)
+        response_message = f"🕋 <b>Ramazan İbadeti</b> 🕋\n────────────────\n{ibadet}\n────────────────"
+        bot.reply_to(message, response_message, parse_mode='HTML')
+        logger.info(f"İbadet gönderildi: {ibadet}")
+    except Exception as e:
+        logger.error(f"İbadet gönderilemedi: {e}")
+        bot.reply_to(message, "Bir hata oluştu, lütfen tekrar deneyin.")
 
 @bot.message_handler(commands=['zikir'])
 def send_zikir(message):
-    zikir = random.choice(zikirler)
-    bot.reply_to(message, f"🧎‍♂️ <b>Ramazan Zikri</b> 🧎‍♂️\n────────────────\n{zikir}\n────────────────", parse_mode='HTML')
+    try:
+        zikir = random.choice(zikirler)
+        response_message = f"🧎‍♂️ <b>Ramazan Zikri</b> 🧎‍♂️\n────────────────\n{zikir}\n────────────────"
+        bot.reply_to(message, response_message, parse_mode='HTML')
+        logger.info(f"Zikir gönderildi: {zikir}")
+    except Exception as e:
+        logger.error(f"Zikir gönderilemedi: {e}")
+        bot.reply_to(message, "Bir hata oluştu, lütfen tekrar deneyin.")
 
 @bot.message_handler(commands=['kıssa'])
 def send_kissa(message):
-    kissa = random.choice(kıssalar)
-    bot.reply_to(message, f"📜 <b>Kıssadan Hisse</b> 📜\n────────────────\n{kissa}\n────────────────", parse_mode='HTML')
+    try:
+        kissa = random.choice(kıssalar)
+        response_message = f"📜 <b>Kıssadan Hisse</b> 📜\n────────────────\n{kissa}\n────────────────"
+        bot.reply_to(message, response_message, parse_mode='HTML')
+        logger.info(f"Kıssa gönderildi: {kissa}")
+    except Exception as e:
+        logger.error(f"Kıssa gönderilemedi: {e}")
+        bot.reply_to(message, "Bir hata oluştu, lütfen tekrar deneyin.")
 
 @server.route('/' + TELEGRAM_BOT_TOKEN, methods=['POST'])
 def get_message():
