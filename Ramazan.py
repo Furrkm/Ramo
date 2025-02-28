@@ -5,12 +5,17 @@ from collections import defaultdict
 import random
 from zoneinfo import ZoneInfo
 from flask import Flask, request
-import os  # PORT için
+import os
+import logging
+
+# Loglama ayarları
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Telegram bot token'ı
 TELEGRAM_BOT_TOKEN = "7325325317:AAEPTiFtKJU_LnZX9CN_JKauQoQmhxkfGLI"
 bot = telebot.TeleBot(TELEGRAM_BOT_TOKEN)
-server = Flask(__name__)  # Flask uygulaması 'server' olarak adlandırıldı
+server = Flask(__name__)
 
 API_URL = "http://api.aladhan.com/v1/timingsByCity"
 METHOD = 13  # Diyanet İşleri Başkanlığı'nın hesaplama yöntemi
@@ -29,31 +34,40 @@ zikirler = ["Subhânallahi ve bihamdihi - 100 defa (Allah’ı noksan sıfatlard
 kıssalar = ["Kıssa: Hz. Ebubekir’in İftar Sofrası - Hz. Ebubekir (r.a.), bir gün oruçlu iken yoksul bir aileye iftar için yemek götürdü...", "..."]
 
 def get_prayer_times(city, country="Turkey"):
-    params = {'city': city, 'country': country, 'method': METHOD}
-    response = requests.get(API_URL, params=params)
-    data = response.json()
-    timings = data['data']['timings']
-    if city.lower() in ["istanbul", "i̇stanbul"]:
-        for key in timings:
-            time = datetime.strptime(timings[key], '%H:%M')
-            time -= timedelta(minutes=1)
-            timings[key] = time.strftime('%H:%M')
-    return timings
+    try:
+        params = {'city': city, 'country': country, 'method': METHOD}
+        response = requests.get(API_URL, params=params)
+        response.raise_for_status()
+        data = response.json()
+        timings = data['data']['timings']
+        if city.lower() in ["istanbul", "i̇stanbul"]:
+            for key in timings:
+                time = datetime.strptime(timings[key], '%H:%M')
+                time -= timedelta(minutes=1)
+                timings[key] = time.strftime('%H:%M')
+        return timings
+    except Exception as e:
+        logger.error(f"Prayer times alınamadı: {e}")
+        return {}
 
 def countdown(target_time):
-    now = datetime.now(TIMEZONE)
-    target = datetime.strptime(target_time, '%H:%M').replace(
-        year=now.year, month=now.month, day=now.day, tzinfo=TIMEZONE
-    )
-    if target < now:
-        target += timedelta(days=1)
-    diff = target - now
-    total_seconds = int(diff.total_seconds())
-    hours, remainder = divmod(total_seconds, 3600)
-    minutes, seconds = divmod(remainder, 60)
-    if hours > 0:
-        return f"{hours} saat {minutes} dakika"
-    return f"{minutes} dakika {seconds} saniye"
+    try:
+        now = datetime.now(TIMEZONE)
+        target = datetime.strptime(target_time, '%H:%M').replace(
+            year=now.year, month=now.month, day=now.day, tzinfo=TIMEZONE
+        )
+        if target < now:
+            target += timedelta(days=1)
+        diff = target - now
+        total_seconds = int(diff.total_seconds())
+        hours, remainder = divmod(total_seconds, 3600)
+        minutes, seconds = divmod(remainder, 60)
+        if hours > 0:
+            return f"{hours} saat {minutes} dakika"
+        return f"{minutes} dakika {seconds} saniye"
+    except Exception as e:
+        logger.error(f"Kalan süre hesaplanamadı: {e}")
+        return "Hesaplama hatası"
 
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
@@ -86,6 +100,10 @@ def send_prayer_time(message):
         return
 
     prayer_times = get_prayer_times(city)
+    if not prayer_times:
+        bot.reply_to(message, "Vakitler alınamadı, lütfen tekrar deneyin.")
+        return
+
     prayer_name = 'İftar' if command == '/iftar' else 'Sahur'
     prayer_key = 'Maghrib' if command == '/iftar' else 'Fajr'
     prayer_time = prayer_times[prayer_key]
@@ -108,7 +126,11 @@ def send_all_prayer_times(message):
         return
 
     prayer_times = get_prayer_times(city)
-    current_date = datetime.now().strftime("%d-%m-2025")
+    if not prayer_times:
+        bot.reply_to(message, "Vakitler alınamadı, lütfen tekrar deneyin.")
+        return
+
+    current_date = datetime.now(TIMEZONE).strftime("%d-%m-2025")
     response_message = (
         f"📍 <b>{city.upper()}</b>\n"
         f"📅 {current_date}\n"
@@ -163,21 +185,30 @@ def send_kissa(message):
     kissa = random.choice(kıssalar)
     bot.reply_to(message, f"📜 <b>Kıssadan Hisse</b> 📜\n────────────────\n{kissa}\n────────────────", parse_mode='HTML')
 
-# Webhook işleyicisi
 @server.route('/' + TELEGRAM_BOT_TOKEN, methods=['POST'])
 def get_message():
-    json_string = request.get_data().decode('utf-8')
-    update = telebot.types.Update.de_json(json_string)
-    bot.process_new_updates([update])
-    return "!", 200
+    try:
+        json_string = request.get_data().decode('utf-8')
+        update = telebot.types.Update.de_json(json_string)
+        bot.process_new_updates([update])
+        logger.info("Mesaj işlendi: %s", update)
+        return "!", 200
+    except Exception as e:
+        logger.error(f"Mesaj işlenirken hata: {e}")
+        return "Error", 500
 
 @server.route('/')
 def webhook():
-    bot.remove_webhook()
-    # Render URL'nizi buraya kendi URL'nizle değiştirin
-    bot.set_webhook(url=f'https://ramazan-bot.onrender.com/{TELEGRAM_BOT_TOKEN}')
-    return "Webhook set!", 200
+    try:
+        bot.remove_webhook()
+        webhook_url = f'https://ramobot.onrender.com/{TELEGRAM_BOT_TOKEN}'  # Kendi Render URL’nizi buraya yazın
+        bot.set_webhook(url=webhook_url)
+        logger.info(f"Webhook ayarlandı: {webhook_url}")
+        return "Webhook set!", 200
+    except Exception as e:
+        logger.error(f"Webhook ayarlanırken hata: {e}")
+        return "Webhook setting failed", 500
 
 if __name__ == "__main__":
-    # Render'ın PORT ortam değişkenini kullan, yoksa 5000
-    server.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
+    port = int(os.environ.get("PORT", 5000))
+    server.run(host="0.0.0.0", port=port) 
