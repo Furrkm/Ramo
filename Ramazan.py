@@ -5,11 +5,12 @@ from collections import defaultdict
 import random
 from zoneinfo import ZoneInfo
 from flask import Flask, request
+import os  # PORT için
 
 # Telegram bot token'ı
 TELEGRAM_BOT_TOKEN = "7325325317:AAEPTiFtKJU_LnZX9CN_JKauQoQmhxkfGLI"
 bot = telebot.TeleBot(TELEGRAM_BOT_TOKEN)
-server = Flask(__name__)
+server = Flask(__name__)  # Flask uygulaması 'server' olarak adlandırıldı
 
 API_URL = "http://api.aladhan.com/v1/timingsByCity"
 METHOD = 13  # Diyanet İşleri Başkanlığı'nın hesaplama yöntemi
@@ -17,7 +18,7 @@ TIMEZONE = ZoneInfo("Europe/Istanbul")
 
 user_last_city = defaultdict(str)
 
-# Mesajlar, dualar, hadisler vb. listeler aynı kalıyor
+# Mesajlar, dualar, hadisler vb. listeler aynı kalıyor, burada kısaltıyorum
 messages = ["Oruç, sabrın en güzel öğretmenidir. (Bakara, 2:183)", "..."]
 dualar = ["Allah’ım! Bizi Ramazan’ın feyzinden mahrum bırakma.", "..."]
 hadisler = ["Kim bir oruçluya iftar ettirirse, ona sevap yazılır.", "..."]
@@ -162,6 +163,7 @@ def send_kissa(message):
     kissa = random.choice(kıssalar)
     bot.reply_to(message, f"📜 <b>Kıssadan Hisse</b> 📜\n────────────────\n{kissa}\n────────────────", parse_mode='HTML')
 
+# Webhook işleyicisi
 @server.route('/' + TELEGRAM_BOT_TOKEN, methods=['POST'])
 def get_message():
     json_string = request.get_data().decode('utf-8')
@@ -172,8 +174,10 @@ def get_message():
 @server.route('/')
 def webhook():
     bot.remove_webhook()
-    bot.set_webhook(url=f'https://ramazan-bot.onrender.com/{TELEGRAM_BOT_TOKEN}')  # Render URL'nizi buraya güncelleyin
+    # Render URL'nizi buraya kendi URL'nizle değiştirin
+    bot.set_webhook(url=f'https://ramazan-bot.onrender.com/{TELEGRAM_BOT_TOKEN}')
     return "Webhook set!", 200
 
 if __name__ == "__main__":
-    server.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))  # Render PORT ortam değişkenini kullanır
+    # Render'ın PORT ortam değişkenini kullan, yoksa 5000
+    server.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
