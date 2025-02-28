@@ -3,6 +3,7 @@ import requests
 from datetime import datetime, timedelta
 from collections import defaultdict
 import random
+from zoneinfo import ZoneInfo  # Zaman dilimi için
 
 # Telegram bot token'ı
 TELEGRAM_BOT_TOKEN = "7325325317:AAEPTiFtKJU_LnZX9CN_JKauQoQmhxkfGLI"
@@ -10,6 +11,7 @@ bot = telebot.TeleBot(TELEGRAM_BOT_TOKEN)
 
 API_URL = "http://api.aladhan.com/v1/timingsByCity"
 METHOD = 13  # Diyanet İşleri Başkanlığı'nın hesaplama yöntemi
+TIMEZONE = ZoneInfo("Europe/Istanbul")  # Türkiye saati (UTC+3)
 
 # Kullanıcıların son şehir tercihlerini saklamak için bir sözlük
 user_last_city = defaultdict(str)
@@ -28,7 +30,7 @@ messages = [
     "Ramazan, rahmet ve mağfiret kapılarının açıldığı aydır."
 ]
 
-# Ramazan duaları
+# Ramazan duaları (genişletilmiş)
 dualar = [
     "Allah’ım! Bizi Ramazan’ın feyzinden mahrum bırakma.",
     "Allah’ım! Ramazan’ı bizim için bereketli kıl.",
@@ -42,7 +44,20 @@ dualar = [
     "Allah’ım! Bizi Ramazan’ın bereketiyle rızıklandır.",
     "Allah’ım! Ramazan’da tövbelerimizi kabul et.",
     "Allah’ım! Bize Ramazan’da huzur ve sağlık ver.",
-    "Allah’ım! Ramazan’ın her anını ibadetle geçirmeyi nasip et."
+    "Allah’ım! Ramazan’ın her anını ibadetle geçirmeyi nasip et.",
+    "Allah’ım! Ramazan’da bize merhametinle muamele et.",
+    "Allah’ım! Ramazan’ı günahlarımızdan arınma vesilesi kıl.",
+    "Allah’ım! Bize Ramazan’da bol bol ibadet yapma gücü ver.",
+    "Allah’ım! Ramazan’da Kadir Gecesi’ni idrak etmeyi nasip et.",
+    "Allah’ım! Ramazan’da ailemizi ve sevdiklerimizi koru.",
+    "Allah’ım! Ramazan’da ümmet-i Muhammed’e rahmet ihsan et.",
+    "Allah’ım! Ramazan’da açlıkla imtihan olanlara yardım et.",
+    "Allah’ım! Ramazan’da bize cennet kapılarını aç.",
+    "Allah’ım! Ramazan’da şeytanın şerrinden bizi koru.",
+    "Allah’ım! Ramazan’da ibadetlerimizi artır ve kabul buyur.",
+    "Allah’ım! Ramazan’da fakir ve muhtaçlara yardım etmeyi nasip et.",
+    "Allah’ım! Ramazan’da bize af ve mağfiret ihsan et.",
+    "Allah’ım! Ramazan’da Kur’an ile hemhal olmayı nasip et."
 ]
 
 # Ramazan hadisleri
@@ -159,14 +174,25 @@ def get_prayer_times(city, country="Turkey"):
     return timings
 
 def countdown(target_time):
-    now = datetime.now()
-    target = datetime.strptime(target_time, '%H:%M')
-    target = now.replace(hour=target.hour, minute=target.minute, second=0, microsecond=0)
+    # Mevcut zamanı Türkiye saatiyle al
+    now = datetime.now(TIMEZONE)
+    # Hedef zamanı bugünün tarihiyle birleştir ve Türkiye saatiyle ayarla
+    target = datetime.strptime(target_time, '%H:%M').replace(
+        year=now.year, month=now.month, day=now.day, tzinfo=TIMEZONE
+    )
+    # Eğer hedef zaman geçmişse, bir gün sonrasına ayarla
     if target < now:
-        target += timedelta(days=1)  # Ertesi gün için hesaplama
-    countdown_time = target - now
-    hours, remainder = divmod(int(countdown_time.total_seconds()), 3600)
+        target += timedelta(days=1)
+    
+    # Kalan süreyi hesapla
+    diff = target - now
+    total_seconds = int(diff.total_seconds())
+    
+    # Saat, dakika ve saniyeyi hesapla
+    hours, remainder = divmod(total_seconds, 3600)
     minutes, seconds = divmod(remainder, 60)
+    
+    # Saat varsa saat ve dakika, yoksa dakika ve saniye döndür
     if hours > 0:
         return f"{hours} saat {minutes} dakika"
     return f"{minutes} dakika {seconds} saniye"
